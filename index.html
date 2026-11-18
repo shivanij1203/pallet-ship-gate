@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Real improvement or noise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08090b;
+    --ink:#ecebe6;
+    --body:#c4c3bc;
+    --dim:#94958f;
+    --faint:#5c5e5a;
+    --line:#1f2226;
+    --accent:#f2a93b;
+    --miss:#7b8592;
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --s1:6px;--s2:12px;--s3:18px;--s4:24px;--s5:36px;--s6:60px;--s7:96px;--s8:120px;
+    --z-field:0;--z-content:1;--z-nav:10;--z-tip:20;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;background:var(--bg)}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-weight:300;line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+  #field{position:fixed;inset:0;width:100%;height:100%;z-index:var(--z-field);display:block}
+
+  /* nav */
+  .nav{position:fixed;top:0;left:0;right:0;z-index:var(--z-nav);display:flex;align-items:center;gap:var(--s5);padding:var(--s3) 32px}
+  .mark{display:flex;align-items:center;gap:10px;font:500 15px/1 "Inter Tight",Inter,sans-serif;color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+  .mark i{width:10px;height:10px;border:1.5px solid var(--accent);transform:rotate(45deg);display:block}
+  .nav ul{display:flex;gap:var(--s4);list-style:none;margin:0 0 0 auto;padding:0}
+  .nav ul a{font:600 12px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-decoration:none;transition:color 160ms ease-out}
+  .nav ul a:hover,.nav ul a.on{color:var(--ink)}
+  .pill{font:600 12px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#120c04;background:var(--accent);padding:12px 18px;border-radius:999px;text-decoration:none;transition:background-color 160ms ease-out,transform 160ms ease-out}
+  .pill:hover{background:#f6bb5f}
+  .pill:active{transform:scale(.97)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+  @media (max-width:820px){.nav ul{display:none}.nav{justify-content:space-between}}
+
+  /* sections */
+  main{position:relative;z-index:var(--z-content)}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+  section{min-height:100vh;min-height:100svh;display:flex;align-items:center;padding:var(--s8) 0}
+  section .wrap{width:100%}
+  .col{width:min(480px,44%)}
+  section[data-side="right"] .col{margin-right:auto}
+  section[data-side="left"] .col{margin-left:auto}
+  section[data-side="center"] .col{width:min(760px,100%);margin:0 auto;text-align:center}
+  section.hero .col{width:min(600px,52%)}
+
+  .eyebrow{font:600 12px/1.2 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 var(--s3)}
+  h1,h2{font-family:"Inter Tight",Inter,sans-serif;font-weight:400;color:var(--ink);margin:0}
+  h1{font-size:clamp(44px,6.6vw,96px);line-height:1.02;letter-spacing:-.045em;margin-bottom:var(--s5)}
+  h2{font-size:clamp(32px,3.9vw,52px);line-height:1.08;letter-spacing:-.035em;margin-bottom:var(--s4)}
+  p{font-size:18px;color:var(--body);margin:0 0 var(--s3);max-width:62ch}
+  p.lede{font-size:21px;line-height:1.5;color:var(--ink);font-weight:300}
+  b{font-weight:600;color:var(--ink)}
+  .note{font-size:13px;line-height:1.5;color:var(--faint);margin-top:var(--s4)}
+  .cap{font-size:13px;line-height:1.5;color:var(--dim);margin-top:var(--s4);padding-left:var(--s2);border-left:1px solid var(--accent)}
+  #verdict p{margin-left:auto;margin-right:auto}
+
+  .readout{display:grid;grid-template-columns:.8fr .9fr 1.3fr;gap:var(--s3);margin:var(--s5) 0 var(--s4);padding-top:var(--s4);border-top:1px solid var(--line)}
+  .readout div{font-size:13px;line-height:1.4;color:var(--dim)}
+  .readout strong{display:block;white-space:nowrap;font:400 clamp(28px,2.6vw,36px)/1 "Inter Tight",Inter,sans-serif;letter-spacing:-.03em;color:var(--ink);margin-bottom:var(--s1);font-variant-numeric:tabular-nums}
+  .readout .hot strong{color:var(--accent)}
+
+  ol.flow{list-style:none;padding:0;margin:var(--s5) 0 0;counter-reset:f}
+  ol.flow li{counter-increment:f;display:grid;grid-template-columns:42px 1fr;padding:var(--s3) 0;border-top:1px solid var(--line);font-size:17px;color:var(--body)}
+  ol.flow li::before{content:"0" counter(f);font:500 13px/1.9 "Inter Tight",Inter,sans-serif;color:var(--accent);font-variant-numeric:tabular-nums}
+
+  .verdict{font:300 clamp(26px,3.2vw,42px)/1.25 "Inter Tight",Inter,sans-serif;letter-spacing:-.025em;color:var(--ink);max-width:none}
+  .verdict em{font-style:normal;color:var(--accent)}
+
+  .limits{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5);margin-top:var(--s5)}
+  .limits h3{font:500 15px/1.3 Inter,sans-serif;color:var(--ink);margin:0 0 var(--s1);padding-top:var(--s2);border-top:1px solid var(--line)}
+  .limits p{font-size:15px;color:var(--dim);margin:0}
+
+  .foot{position:relative;z-index:var(--z-content);color:var(--faint);font-size:13px;padding:var(--s6) 0 var(--s7)}
+  .foot .wrap{display:flex;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;border-top:1px solid var(--line);padding-top:var(--s4)}
+  .foot a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);transition:color 160ms ease-out,border-color 160ms ease-out}
+  .foot a:hover{color:var(--ink);border-color:var(--accent)}
+
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  .tip{position:fixed;z-index:var(--z-tip);pointer-events:none;background:#121418;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:12px;line-height:1.4;color:var(--ink);opacity:0;transform:translateY(4px);transition:opacity 120ms ease-out,transform 120ms ease-out;max-width:240px}
+  .tip.on{opacity:1;transform:none}
+
+  /* reveal: masked lines for headings, rise for blocks */
+  .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+  .ln>span{display:block;transform:translateY(105%);transition:transform 1100ms var(--ease-out);transition-delay:calc(var(--i,0) * 90ms)}
+  .in .ln>span{transform:none}
+  [data-r]{opacity:0;transform:translateY(24px);clip-path:inset(0 0 100% 0);transition:opacity 700ms ease-out,transform 1000ms var(--ease-out),clip-path 1000ms var(--ease-out);transition-delay:calc(var(--d,0) * 1ms)}
+  .in [data-r],[data-r].in{opacity:1;transform:none;clip-path:inset(0 0 -20% 0)}
+  @media (prefers-reduced-motion:reduce){
+    .ln>span,[data-r]{transform:none;opacity:1;clip-path:none;transition:none}
+  }
+
+  @media (max-width:820px){
+    section{align-items:flex-end;padding:52vh 0 var(--s6)}
+    section.hero{padding-top:46vh}
+    .col,section.hero .col,section[data-side] .col{width:100%;margin:0}
+    section[data-side="center"] .col{text-align:left}
+    .col{background:rgba(8,9,11,.86);border:1px solid var(--line);border-radius:16px;padding:var(--s4)}
+    .wrap{padding:0 16px}
+    p{font-size:17px}
+    p.lede{font-size:19px}
+    .readout{grid-template-columns:1fr}
+    .limits{grid-template-columns:1fr;gap:var(--s4)}
+    .nav{padding:var(--s3) 16px}
+  }
+</style>
+</head>
+<body>
+<canvas id="field" aria-hidden="true"></canvas>
+
+<nav class="nav" aria-label="Sections">
+  <a class="mark" href="#top"><i></i>Ship gate</a>
+  <ul>
+    <li><a href="#task">The task</a></li>
+    <li><a href="#numbers">The numbers</a></li>
+    <li><a href="#gate">The gate</a></li>
+    <li><a href="#limits">Limits</a></li>
+  </ul>
+  <a class="pill" href="https://github.com/shivanij1203/pallet-ship-gate">Method and code</a>
+</nav>
+
+<main>
+  <section id="top" class="hero" data-scene="sphere" data-side="right">
+    <div class="wrap"><div class="col">
+      <p class="eyebrow" data-r>An eval note on agent changes</p>
+      <h1 data-lines><span class="ln"><span>You changed</span></span><span class="ln"><span>the agent.</span></span><span class="ln"><span>Better, or</span></span><span class="ln"><span>just lucky?</span></span></h1>
+      <p class="lede" data-r style="--d:200">A single before/after run can't tell you. The same agent, rerun on the same cases, already disagrees with itself. Here is that disagreement, drawn from a real classification task.</p>
+      <p class="cap" data-r style="--d:350">Every point on this page is one of the 220 real calls. Amber matched the later ruling, grey did not. Scroll and they rearrange into the evidence.</p>
+    </div></div>
+  </section>
+
+  <section id="task" data-scene="clusters" data-side="left">
+    <div class="wrap"><div class="col">
+      <p class="eyebrow" data-r>The task</p>
+      <h2 data-lines><span class="ln"><span>Classify a product</span></span><span class="ln"><span>under the US</span></span><span class="ln"><span>tariff schedule.</span></span></h2>
+      <p class="lede" data-r>The way a logistics agent would, before a shipment moves.</p>
+      <p data-r style="--d:120">The answer key is public and already settled. US Customs periodically revises its own past classification rulings and publishes the correction. I pulled <b>22 of those revised rulings</b> from the 2026 Customs Bulletins, stripped every case down to the product description, and kept the final tariff code as the gold answer. No private data, no synthetic labels, no case that carries its own answer in the text.</p>
+      <p class="note" data-r style="--d:200">Independent research on public CBP documents. Not affiliated with or endorsed by CBP. Ruling numbers removed from the prompts.</p>
+      <p class="sr">Visual: 22 clusters of 10 points, one cluster per ruling, each point one call.</p>
+    </div></div>
+  </section>
+
+  <section id="setup" data-scene="grid" data-side="right">
+    <div class="wrap"><div class="col">
+      <p class="eyebrow" data-r>The setup</p>
+      <h2 data-lines><span class="ln"><span>Two versions.</span></span><span class="ln"><span>Five reruns each.</span></span></h2>
+      <p data-r><b>Version A</b> classifies directly. <b>Version B</b> adds one instruction most people would expect to help: work through the tariff interpretation rules in order before answering.</p>
+      <p data-r style="--d:120">I ran each version <b>five times</b> over all 22 cases. Same model, same cases, nothing changed between runs except chance. 220 calls in total. Then the only question that matters before shipping: is B's lift bigger than the gap the agent produces against <i>itself</i> on a rerun?</p>
+      <p class="cap" data-r style="--d:220">Each row is one case, each column one rerun. Highlighted rows flip between runs on identical input. Hover a point for detail.</p>
+      <p class="sr">Visual: two grids of 22 rows by 5 runs. Version A has 6 cases that flip between runs, Version B has 5.</p>
+    </div></div>
+  </section>
+
+  <section id="numbers" data-scene="strip" data-side="left">
+    <div class="wrap"><div class="col">
+      <p class="eyebrow" data-r>What the numbers show</p>
+      <h2 data-lines><span class="ln"><span>The lift is smaller</span></span><span class="ln"><span>than the wobble.</span></span></h2>
+      <div class="readout" data-r>
+        <div class="hot"><strong data-count="4.5" data-pre="+" data-dec="1">+4.5</strong>points, B over A on average</div>
+        <div><strong data-count="13.6" data-dec="1" data-suf=" pts">13.6 pts</strong>B's swing against itself</div>
+        <div><strong>−2.7 to 13.6</strong>95% interval on the gap, in points: it crosses zero</div>
+      </div>
+      <p data-r style="--d:120">Each band is how far that version swings from one rerun to the next. The bands overlap almost completely, and B's average improvement is smaller than B's own swing. Resample the cases ten thousand times and the gap still can't clear zero with confidence: about a <b>1 in 8</b> chance B is really no better, rising to <b>2 in 5</b> once you grade on the finer 6-digit code.</p>
+      <p class="note" data-r style="--d:200">Both versions land near 40% because these are the rulings CBP itself went back and reconsidered, the genuinely hard cases. The finding is the gap between versions against the noise, not the absolute score.</p>
+      <p class="sr">Visual: per-run accuracy. Version A runs: 36.4, 31.8, 40.9, 36.4, 36.4 percent, mean 36.4, swing 9.1 points. Version B runs: 40.9, 40.9, 36.4, 50.0, 36.4 percent, mean 40.9, swing 13.6 points.</p>
+    </div></div>
+  </section>
+
+  <section id="onerun" data-scene="bars" data-side="right">
+    <div class="wrap"><div class="col">
+      <p class="eyebrow" data-r>The trap</p>
+      <h2 data-lines><span class="ln"><span>One run would</span></span><span class="ln"><span>have shipped it.</span></span></h2>
+      <p data-r>Line up A's worst run against B's best and the change looks like a clear win: 7 against 11. That is the comparison a normal before/after gives you, and it is the exact trap. About <b>1 in 4 cases</b> lands differently depending on the run, so the result you read is partly the draw you happened to get.</p>
+      <p class="sr">Visual: Version A's worst run matched 7 of 22 cases; Version B's best run matched 11 of 22.</p>
+    </div></div>
+  </section>
+
+  <section id="gate" data-scene="gate" data-side="left">
+    <div class="wrap"><div class="col">
+      <p class="eyebrow" data-r>The gate</p>
+      <h2 data-lines><span class="ln"><span>Measure the noise.</span></span><span class="ln"><span>Ship only what</span></span><span class="ln"><span>clears it.</span></span></h2>
+      <ol class="flow" data-r>
+        <li>Rerun the current agent a few times on a fixed set and record how far it drifts from itself. That spread is the noise floor.</li>
+        <li>Run the proposed change the same number of times. Compare distributions, not single scores.</li>
+        <li>Ship only when the change beats the floor and its interval clears zero. Otherwise it is a coin flip wearing a number.</li>
+      </ol>
+    </div></div>
+  </section>
+
+  <section id="verdict" data-scene="halo" data-side="center">
+    <div class="wrap"><div class="col">
+      <p class="verdict" data-r>Pallet's pitch is that an agent <em>never resolve the same exception twice.</em> That promise lives or dies on telling a real gain from noise before it reaches a customer. This is the check that sits between a change and the ship button.</p>
+    </div></div>
+  </section>
+
+  <section id="limits" data-scene="scatter" data-side="center">
+    <div class="wrap"><div class="col" style="text-align:left">
+      <p class="eyebrow" data-r>Honest limits</p>
+      <h2 data-lines><span class="ln"><span>What this does not claim.</span></span></h2>
+      <div class="limits" data-r>
+        <div><h3>Small and single</h3><p>22 cases, one frontier model, one task family. It sizes an effect, it does not certify the agent.</p></div>
+        <div><h3>Noise left on</h3><p>The model samples by default and exposes no switch to turn that off. Even forced to decode greedily, an agent that calls tools and retrieves is never fully repeatable. This is the variance production ships with, not a lab-quieted version.</p></div>
+      </div>
+      <p class="note" data-r style="--d:150">The method is the point, not the model. Swap in Pallet's own agent, its own exception data, and a larger set, and the gate reads the same way.</p>
+    </div></div>
+  </section>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <span>Shivani Jagannatham · independent work for Pallet</span>
+  <a href="https://github.com/shivanij1203/pallet-ship-gate" id="codelink">Method and code</a>
+</div></footer>
+
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = {"N": 22, "runs": [1, 2, 3, 4, 5], "A_base": {"perrun": [36.4, 31.8, 40.9, 36.4, 36.4]}, "B_change": {"perrun": [40.9, 40.9, 36.4, 50.0, 36.4]}, "A_mean": 36.4, "B_mean": 40.9, "ids": ["H304427", "H313006", "H326595", "H339255", "H345915", "H007440", "H267922", "H348342", "H065718", "H330361", "H338697", "H254420", "H286664", "H314018", "H314991", "H324253", "H336925", "H341641", "H346396", "H348162", "H349848", "H354597"], "cellsA": [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 0, 1, 1, 1], [0, 1, 1, 0, 1], [1, 0, 0, 1, 1], [0, 1, 1, 0, 0], [1, 0, 1, 0, 0], [1, 0, 0, 1, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], "cellsB": [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 0, 1, 0], [1, 0, 0, 1, 1], [0, 0, 0, 1, 0], [0, 0, 1, 1, 0], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]};
+
+const COLORS = { accent: '#f2a93b', miss: '#7b8592', ink: '#ecebe6', dim: '#94958f', faint: '#5c5e5a', line: '#1f2226' };
+const AMBIENT_COLORS = ['#f2a93b', '#3fb8a0', '#8f7cff', '#d9d6cc', '#e46f7a'];
+const ROWS = DATA.ids.length, RUNS = DATA.runs.length;
+const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- the 220 calls, one particle each ---------- */
+function seeded(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+const rand = seeded(7);
+const CALLS = Object.freeze(['A', 'B'].flatMap(v => {
+  const cells = v === 'A' ? DATA.cellsA : DATA.cellsB;
+  return DATA.ids.flatMap((id, row) => DATA.runs.map((_, run) => Object.freeze({ v, row, run, hit: cells[row][run] === 1 })));
+}));
+const N = CALLS.length;
+const STAGGER = CALLS.map(() => rand());
+const PERM = CALLS.map((_, i) => i).sort(() => rand() - 0.5);
+const flips = cells => cells.map(r => { const s = r.reduce((a, b) => a + b, 0); return s > 0 && s < RUNS; });
+const FLIP = { A: flips(DATA.cellsA), B: flips(DATA.cellsB) };
+const runScore = (v, run) => (v === 'A' ? DATA.A_base : DATA.B_change).perrun[run];
+
+/* ---------- canvas ---------- */
+const cv = document.getElementById('field');
+const ctx = cv.getContext('2d');
+const sections = [...document.querySelectorAll('main section[data-scene]')];
+let W = 0, H = 0, mobile = false, scenes = [], centers = [];
+const pos = CALLS.map(() => ({ x: 0, y: 0, r: 2, a: 0, init: false }));
+const ambient = Array.from({ length: 320 }, () => ({
+  x: rand(), y: rand(), z: 0.15 + rand() * 0.85, c: AMBIENT_COLORS[Math.floor(rand() * AMBIENT_COLORS.length)],
+  rot: rand() * Math.PI, spin: (rand() - 0.5) * 0.4, ring: rand() < 0.35,
+}));
+
+function region(side) {
+  if (mobile) return { cx: W / 2, cy: H * 0.27, rw: W * 0.9, rh: H * 0.42 };
+  if (side === 'right') return { cx: W * 0.71, cy: H * 0.53, rw: W * 0.44, rh: H * 0.74 };
+  if (side === 'left') return { cx: W * 0.29, cy: H * 0.53, rw: W * 0.44, rh: H * 0.74 };
+  return { cx: W / 2, cy: H / 2, rw: W * 0.9, rh: H * 0.9 };
+}
+
+const label = (txt, x, y, color, font, align = 'center') => {
+  ctx.fillStyle = color; ctx.font = font; ctx.textAlign = align; ctx.fillText(txt, x, y);
+};
+
+/* Each scene: 220 target points {x,y,z,r,a} relative to a center, a spin rate, and an optional overlay. */
+const SCENE_BUILDERS = {
+  sphere(g) {
+    const R = Math.min(g.rw, g.rh) * 0.44;
+    return { ...g, spin: 0.14, pts: CALLS.map((_, i) => fib(PERM[i], R, 3.2, 1)) };
+  },
+  halo(g) {
+    const R = Math.min(g.rw, g.rh) * 0.5;
+    return { ...g, spin: 0.06, pts: CALLS.map((_, i) => fib(PERM[i], R, 3, 0.28)) };
+  },
+  gate(g) {
+    const R = Math.min(g.rw, g.rh) * 0.3;
+    return { ...g, spin: 0.1, pts: CALLS.map((c, i) => ({ ...fib(PERM[i], R, 3, c.hit ? 1 : 0.45) })) };
+  },
+  clusters(g) {
+    const rx = Math.min(g.rw * 0.42, g.rh * 0.62), cr = Math.max(9, rx * 0.085);
+    return { ...g, spin: 0.1, pts: CALLS.map(c => {
+      const a = (c.row / ROWS) * Math.PI * 2, k = (c.v === 'A' ? 0 : 5) + c.run, b = (k / 10) * Math.PI * 2;
+      return { x: Math.cos(a) * rx + Math.cos(b) * cr, y: Math.sin(a) * rx * 0.22 + Math.sin(b) * cr, z: Math.sin(a) * rx, r: 3, a: 1 };
+    }) };
+  },
+  grid(g) {
+    const cell = Math.min(g.rw * 0.9 / 11, g.rh * 0.84 / ROWS);
+    const colX = c => ((c.v === 'A' ? c.run : c.run + 6) - 5) * cell;
+    const rowY = row => (row - (ROWS - 1) / 2) * cell;
+    return { ...g, spin: 0, cell, pts: CALLS.map(c => ({ x: colX(c), y: rowY(c.row), z: 0, r: Math.min(4.2, cell * 0.3), a: 1 })),
+      overlay(w) {
+        ['A', 'B'].forEach(v => {
+          const x0 = g.cx + ((v === 'A' ? 0 : 6) - 5.5) * cell;
+          ctx.fillStyle = 'rgba(242,169,59,0.08)';
+          FLIP[v].forEach((f, row) => { if (f) ctx.fillRect(x0, g.cy + rowY(row) - cell * 0.42, cell * 5, cell * 0.84); });
+          label('Version ' + v, x0 + cell * 2.5, g.cy + rowY(0) - cell * 1.3, COLORS.dim, '600 11px Inter, sans-serif');
+        });
+      } };
+  },
+  strip(g) {
+    const sp = Math.max(3.4, Math.min(5.2, g.rw / 150)), span = g.rw * 0.86;
+    const X = s => ((s - 30) / 25 - 0.5) * span;
+    const rowY = { A: -g.rh * 0.17, B: g.rh * 0.2 };
+    const stackIndex = {};
+    const order = {};
+    const pts = CALLS.map((c, i) => {
+      const key = c.v + c.run;
+      if (!(key in order)) {
+        const same = DATA.runs.map((_, r) => r).filter(r => r < c.run && runScore(c.v, r) === runScore(c.v, c.run)).length;
+        order[key] = { n: 0, level: same, hits: CALLS.filter(o => o.v === c.v && o.run === c.run && o.hit).length };
+      }
+      const o = order[key];
+      const rank = c.hit ? (stackIndex[key + 'h'] = (stackIndex[key + 'h'] ?? -1) + 1) : o.hits + (stackIndex[key + 'm'] = (stackIndex[key + 'm'] ?? -1) + 1);
+      const col = rank % 6, rr = Math.floor(rank / 6);
+      return { x: X(runScore(c.v, c.run)) + (col - 2.5) * sp, y: rowY[c.v] - (o.level * 4.6 + rr) * sp, z: 0, r: sp * 0.42, a: 1 };
+    });
+    return { ...g, spin: 0, pts, overlay() {
+      const base = g.cy + g.rh * 0.34;
+      ctx.strokeStyle = COLORS.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(g.cx + X(30), base); ctx.lineTo(g.cx + X(55), base); ctx.stroke();
+      for (let s = 30; s <= 55; s += 5) label(s + '%', g.cx + X(s), base + 18, COLORS.faint, '400 11px Inter, sans-serif');
+      [['A', DATA.A_base.perrun, DATA.A_mean], ['B', DATA.B_change.perrun, DATA.B_mean]].forEach(([v, runs, mean]) => {
+        const lo = Math.min(...runs), hi = Math.max(...runs), y = g.cy + rowY[v], hot = v === 'B';
+        ctx.fillStyle = hot ? 'rgba(242,169,59,0.07)' : 'rgba(236,235,230,0.05)';
+        ctx.fillRect(g.cx + X(lo) - sp * 3.5, y - sp * 14, X(hi) - X(lo) + sp * 7, sp * 15.5);
+        ctx.strokeStyle = hot ? COLORS.accent : COLORS.ink; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(g.cx + X(mean), y - sp * 15); ctx.lineTo(g.cx + X(mean), y + sp * 2.5); ctx.stroke();
+        label('Version ' + v + '  ·  ' + mean.toFixed(1) + '% avg  ·  ' + (hi - lo).toFixed(1) + ' pt swing',
+          g.cx + X(30), y - sp * 15.5, hot ? COLORS.accent : COLORS.dim, '600 11px Inter, sans-serif', 'left');
+      });
+    } };
+  },
+  bars(g) {
+    const sp = Math.max(8, Math.min(16, g.rh * 0.5 / 5)), base = g.rh * 0.12;
+    const pick = { A: 1, B: 3 }, bx = { A: -g.rw * 0.2, B: g.rw * 0.2 };
+    const count = {};
+    const pts = CALLS.map((c, i) => {
+      if (c.run !== pick[c.v]) {
+        const p = fib(PERM[i], Math.min(g.rw, g.rh) * 0.6, 2.4, 0.12);
+        return p;
+      }
+      const k = c.v + c.hit, n = (count[k] = (count[k] ?? -1) + 1);
+      const x = bx[c.v] + ((n % 5) - 2) * sp;
+      const y = c.hit ? base - (Math.floor(n / 5) + 0.5) * sp : base + (Math.floor(n / 5) + 1) * sp;
+      return { x, y, z: 0, r: sp * 0.36, a: c.hit ? 1 : 0.5 };
+    });
+    return { ...g, spin: 0, pts, overlay() {
+      const y = g.cy + base;
+      ctx.strokeStyle = COLORS.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(g.cx - g.rw * 0.36, y); ctx.lineTo(g.cx + g.rw * 0.36, y); ctx.stroke();
+      [['A', 'worst run', 7, COLORS.dim], ['B', 'best run', 11, COLORS.accent]].forEach(([v, what, n, col]) => {
+        const top = y - (Math.ceil(n / 5) + 1.4) * sp;
+        label(n + ' / 22', g.cx + bx[v], top - 20, col, '400 30px "Inter Tight", Inter, sans-serif');
+        label('Version ' + v + ', ' + what, g.cx + bx[v], top, COLORS.dim, '600 11px Inter, sans-serif');
+      });
+    } };
+  },
+  scatter(g) {
+    return { cx: W / 2, cy: H / 2, spin: 0.025, pts: CALLS.map(() => ({ x: (rand() - 0.5) * W * 1.1, y: (rand() - 0.5) * H * 1.1, z: (rand() - 0.5) * 900, r: 2.6, a: 0.4 })) };
+  },
+};
+
+function fib(i, R, r, a) {
+  const y = 1 - 2 * (i + 0.5) / N, rad = Math.sqrt(1 - y * y), th = i * 2.399963;
+  return { x: Math.cos(th) * rad * R, y: y * R, z: Math.sin(th) * rad * R, r, a };
+}
+
+function build() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight; mobile = W <= 820;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  scenes = sections.map(s => SCENE_BUILDERS[s.dataset.scene](region(s.dataset.side)));
+  // Phones: a scene is fully formed while the empty top of its section is on screen, before the text panel covers it.
+  centers = sections.map(s => s.offsetTop + (mobile ? H * 0.5 : s.offsetHeight / 2));
+}
+
+function project(scene, i, t) {
+  const p = scene.pts[i], ang = scene.spin ? (REDUCE ? 0.6 : t * scene.spin + 0.6) : 0;
+  const c = Math.cos(ang), s = Math.sin(ang);
+  const x = p.x * c - p.z * s, z = p.x * s + p.z * c, f = 760 / (760 + z);
+  return { x: scene.cx + x * f, y: scene.cy + p.y * f, r: p.r * f, a: p.a * Math.min(1, Math.max(0.25, f - 0.1)) };
+}
+
+const clamp = v => Math.max(0, Math.min(1, v));
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+function sceneState() {
+  const y = window.scrollY + H / 2;
+  if (y <= centers[0]) return { i: 0, t: 0 };
+  const last = centers.length - 1;
+  if (y >= centers[last]) return { i: last, t: 0 };
+  let i = 0; while (y > centers[i + 1]) i++;
+  const raw = (y - centers[i]) / (centers[i + 1] - centers[i]);
+  return { i, t: clamp((raw - 0.18) / 0.64) };
+}
+
+function diamond(x, y, r) {
+  ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath();
+}
+
+function drawAmbient(t) {
+  const drift = REDUCE ? 0 : t * 7;
+  ctx.lineWidth = 1;
+  ambient.forEach(p => {
+    const span = H + 60;
+    const yy = ((p.y * span - window.scrollY * 0.18 * p.z - drift * p.z) % span + span) % span - 30;
+    const size = 1.2 + p.z * p.z * 9;
+    ctx.globalAlpha = p.z > 0.8 ? 0.22 : 0.1 + p.z * 0.35;
+    ctx.strokeStyle = p.c;
+    if (p.ring) { ctx.beginPath(); ctx.arc(p.x * W, yy, size * 0.7, 0, Math.PI * 2); ctx.stroke(); return; }
+    const a = p.rot + (REDUCE ? 0 : t * p.spin);
+    ctx.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const ang = a + k * Math.PI / 2;
+      const px = p.x * W + Math.cos(ang) * size * 0.8, py = yy + Math.sin(ang) * size * 0.8;
+      k ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath(); ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+}
+
+let hover = null;
+function frame(ms) {
+  const t = ms / 1000;
+  ctx.clearRect(0, 0, W, H);
+  drawAmbient(t);
+  const { i, t: tt } = sceneState();
+  const A = scenes[i], B = scenes[Math.min(i + 1, scenes.length - 1)];
+  const k = REDUCE ? 1 : 0.12;
+  for (let n = 0; n < N; n++) {
+    const local = ease(clamp(tt * 1.5 - STAGGER[n] * 0.5));
+    const pa = project(A, n, t), pb = project(B, n, t);
+    const goal = { x: pa.x + (pb.x - pa.x) * local, y: pa.y + (pb.y - pa.y) * local, r: pa.r + (pb.r - pa.r) * local, a: pa.a + (pb.a - pa.a) * local };
+    const p = pos[n];
+    if (!p.init) Object.assign(p, goal, { init: true });
+    p.x += (goal.x - p.x) * k; p.y += (goal.y - p.y) * k; p.r += (goal.r - p.r) * k; p.a += (goal.a - p.a) * k;
+    const c = CALLS[n];
+    ctx.globalAlpha = p.a * (hover === n ? 1 : 0.92);
+    diamond(p.x, p.y, hover === n ? p.r * 1.8 : p.r);
+    if (c.hit) { ctx.fillStyle = COLORS.accent; ctx.fill(); }
+    else { ctx.strokeStyle = COLORS.miss; ctx.lineWidth = 1; ctx.globalAlpha *= 0.7; ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+  [[A, 1 - tt], [B, tt]].forEach(([s, w]) => {
+    if (s.overlay && w > 0.02) { ctx.globalAlpha = ease(w); s.overlay(w); ctx.globalAlpha = 1; }
+  });
+  requestAnimationFrame(frame);
+}
+
+/* ---------- hover detail on data scenes ---------- */
+const tip = document.getElementById('tip');
+window.addEventListener('pointermove', ev => {
+  const { i, t } = sceneState();
+  const name = sections[t > 0.5 ? Math.min(i + 1, sections.length - 1) : i].dataset.scene;
+  const settled = t < 0.1 || t > 0.9;
+  hover = null;
+  if (settled && ['grid', 'strip', 'bars'].includes(name) && !ev.target.closest('.col, .nav')) {
+    let best = 81;
+    pos.forEach((p, n) => { const d = (p.x - ev.clientX) ** 2 + (p.y - ev.clientY) ** 2; if (d < best && p.a > 0.3) { best = d; hover = n; } });
+  }
+  if (hover === null) { tip.classList.remove('on'); return; }
+  const c = CALLS[hover];
+  tip.textContent = `Case ${c.row + 1} of 22 · Version ${c.v} · run ${c.run + 1} · ${c.hit ? 'matched the later ruling' : 'did not match'}${FLIP[c.v][c.row] ? ' · flips between runs' : ''}`;
+  tip.style.left = Math.min(ev.clientX + 14, W - 250) + 'px'; tip.style.top = (ev.clientY + 14) + 'px';
+  tip.classList.add('on');
+});
+
+/* ---------- reveals, counters, nav ---------- */
+document.querySelectorAll('[data-lines]').forEach(h => h.querySelectorAll('.ln > span').forEach((s, i) => s.style.setProperty('--i', i)));
+
+function countUp(el) {
+  const to = parseFloat(el.dataset.count), dec = +el.dataset.dec, pre = el.dataset.pre || '', suf = el.dataset.suf || '';
+  if (REDUCE) return;
+  const t0 = performance.now(), dur = 900;
+  const step = now => {
+    const p = clamp((now - t0) / dur), v = to * (1 - Math.pow(1 - p, 3));
+    el.textContent = pre + v.toFixed(dec) + suf;
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+const revealObs = new IntersectionObserver(entries => entries.forEach(e => {
+  if (!e.isIntersecting) return;
+  e.target.classList.add('in');
+  e.target.querySelectorAll('[data-count]').forEach(countUp);
+  revealObs.unobserve(e.target);
+}), { threshold: 0.15 });
+// Observe the unclipped column, not the clipped children: clip-path hides them from IntersectionObserver.
+document.querySelectorAll('main .col').forEach(el => revealObs.observe(el));
+
+const navLinks = [...document.querySelectorAll('.nav ul a')];
+const navObs = new IntersectionObserver(entries => entries.forEach(e => {
+  if (!e.isIntersecting) return;
+  navLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+}), { rootMargin: '-45% 0px -45% 0px' });
+sections.forEach(s => navObs.observe(s));
+
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(build, 120); });
+document.fonts?.ready.then(build);
+build();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
