@@ -2,7 +2,7 @@ import json, random, statistics as st
 
 R = [r for r in json.load(open("data/results.json")) if r.get("pred_hts")]
 H = lambda c: c[:4] if c else None
-S = lambda c: c[:6] if c else None
+S = lambda c: c.replace(".", "")[:6] if c else None
 ids = sorted({r["id"] for r in R})
 runs = sorted({r["run"] for r in R})
 N = len(ids)
