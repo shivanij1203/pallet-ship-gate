@@ -23,9 +23,10 @@ Requires Python 3 and nothing else (standard library only). The script calls onl
 export ANTHROPIC_API_KEY=...        # your own key, read from the environment
 export ANTHROPIC_MODEL=...          # the model id to evaluate
 python3 run_eval.py                 # 22 cases x 2 versions x 5 runs = 220 calls
+python3 score.py                    # scores data/results.json
 ```
 
-It overwrites `data/results.json` with fresh results. Sampling is left at the model's default, so a rerun will not match these numbers exactly. That variation is the point.
+`run_eval.py` overwrites `data/results.json` with fresh results. `score.py` then prints per-run accuracy, means, the gap with its bootstrap 95% interval, the noise floor, and the cases that flip across runs. On the committed `data/results.json` it prints exactly the figures shown on the page. Sampling is left at the model's default, so a fresh run will not match them exactly. That variation is the point.
 
 ## Notes
 

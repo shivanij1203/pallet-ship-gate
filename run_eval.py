@@ -22,7 +22,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CASES = os.path.join(HERE, "data", "cases.json")
 OUT = os.path.join(HERE, "data", "results.json")
 RUNS = int(os.environ.get("EVAL_RUNS", "5"))      # repeats per version, to see the noise
-TEMP = float(os.environ.get("EVAL_TEMP", "0.7"))  # nonzero so reruns actually vary
 KEY = os.environ.get("ANTHROPIC_API_KEY")
 MODEL = os.environ.get("ANTHROPIC_MODEL")
 
@@ -39,6 +38,7 @@ CODE = re.compile(r"HTS:\s*(\d{4}(?:\.\d{2}){1,3})")
 
 
 def call(prompt):
+    # The model is called with default sampling; no temperature is set.
     body = json.dumps({
         "model": MODEL, "max_tokens": 2500,  # temperature omitted: rejected by this model (400)
         "thinking": {"type": "between_tools"},  # this model's "off" setting; no tools here, so no thinking
